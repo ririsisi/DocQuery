@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: docquery-pg
+    environment:
+      POSTGRES_USER: docquery
+      POSTGRES_PASSWORD: docquery
+      POSTGRES_DB: docquery
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docquery"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:

@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: docquery
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/docquery
+    username: docquery
+    password: docquery
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+# LangChain4j — 通义千问
+langchain4j:
+  dashscope:
+    api-key: ${DASHSCOPE_API_KEY:your-api-key-here}
+    model-name: qwen-plus
+    chat-model:
+      temperature: 0.3
+      max-tokens: 2048
+    embedding-model:
+      model-name: text-embedding-v3
+
+# 文件存储（本地）
+docquery:
+  storage:
+    type: local
+    local-path: ./uploads
