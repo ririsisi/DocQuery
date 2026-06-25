@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- 引入 Spring Boot 默认转换器，%clr 颜色由编辑器 terminal.ansi* 主题色映射 -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <springProperty scope="context" name="CONSOLE_LOG_CHARSET" source="logging.charset.console" defaultValue="UTF-8"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <charset>${CONSOLE_LOG_CHARSET}</charset>
+            <!-- 低饱和 IDE 风格：次要信息 faint，正文继承主题前景色，仅级别/类名/异常着色 -->
+            <pattern>%clr(%d{HH:mm:ss.SSS}){faint} %clr(%-5level){ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan, TRACE=faint} %clr(%logger{36}){cyan} %clr(:){faint} %m%n%wEx</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="com.docquery" level="DEBUG"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.flywaydb" level="INFO"/>
+    <logger name="dev.langchain4j" level="INFO"/>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>
