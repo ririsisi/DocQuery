@@ -12,16 +12,18 @@
 ## 快速启动
 
 ```bash
-# 1. 启动 PostgreSQL + pgvector
+# 1. 启动 PostgreSQL + pgvector（宿主机端口 15432，避开 Windows 保留端口 5432）
 docker compose up -d
 
 # 2. 设置 API Key
 set DASHSCOPE_API_KEY=your-key-here   # Windows
 export DASHSCOPE_API_KEY=your-key-here # Linux/Mac
 
-# 3. 启动应用
-./mvnw spring-boot:run
+# 3. 启动应用（DevTools 已启用，改 Java 保存后自动编译+重启）
+mvn spring-boot:run
 ```
+
+**开发循环**：改代码 → 停手 800ms 自动保存 → **`Ctrl+Shift+T`** 打开 Task 列表选 **DocQuery: Maven Compile** → DevTools 重启 → `curl` 验收。
 
 ## 设计决策
 
@@ -33,6 +35,16 @@ export DASHSCOPE_API_KEY=your-key-here # Linux/Mac
 | 数据库迁移 | Flyway | 从第一天管住 schema 版本 |
 | 存储 | 本地文件（接口抽象） | 零依赖启动，后续可换 MinIO/S3 |
 | 鉴权 | 无（单用户模式） | 聚焦 RAG 链路，鉴权在 BOMC-Cloud 已证明 |
+
+## 本地环境踩坑（面试可讲）
+
+| # | 现象 | 根因 | 解法 |
+|---|------|------|------|
+| 1 | `docker-credential-desktop` not in PATH | Docker credsStore 配置了 desktop，bin 未进 PATH | 补 `C:\Program Files\Docker\Docker\resources\bin` 到 PATH |
+| 2 | Docker Hub pull EOF | registry 网络不稳定 | Docker Engine 加 `registry-mirrors` |
+| 3 | 5432 bind forbidden，netstat 无占用 | Windows 保留端口段 5430–5529 | 宿主机改 **15432:5432**，JDBC 同步 |
+
+详细话术见 `interview-prep/notes/docquery-decisions.md`（T-01 ~ T-05）。
 
 ## API
 

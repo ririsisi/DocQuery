@@ -1,9 +1,12 @@
 spring:
   application:
     name: docquery
+  output:
+    ansi:
+      enabled: always
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/docquery
+    url: jdbc:postgresql://localhost:15432/docquery
     username: docquery
     password: docquery
 
@@ -19,10 +22,27 @@ spring:
     enabled: true
     locations: classpath:db/migration
 
+  devtools:
+    restart:
+      enabled: true
+      poll-interval: 1s
+      quiet-period: 400ms
+    livereload:
+      enabled: false
+
   servlet:
     multipart:
       max-file-size: 20MB
       max-request-size: 20MB
+
+server:
+  port: 8081
+
+logging:
+  charset:
+    console: UTF-8
+  level:
+    org.springframework.boot.devtools: DEBUG
 
 # LangChain4j — 通义千问
 langchain4j:
