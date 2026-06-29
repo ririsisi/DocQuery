@@ -4,7 +4,6 @@
           xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 https://maven.apache.org/xsd/settings-1.2.0.xsd">
 
   <!-- DocQuery 专用：不走公司内网 Nexus，使用阿里云公共仓库 -->
-  <localRepository>E:\ENV\apache-maven-3.6.3\repo</localRepository>
 
   <mirrors>
     <mirror>
