@@ -30,8 +30,6 @@ public class DocumentChunk {
     private String content;
     @Column(name = "token_count")
     private int tokenCount;
-    @Column(name = "embedding")
-    private String embedding;
     @Column(name = "created_at")
     @CreationTimestamp
     private LocalDateTime createdAt;
