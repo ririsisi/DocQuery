@@ -7,19 +7,21 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.docquery.common.ApiResponse;
+import com.docquery.document.model.AskResult;
 import com.docquery.document.model.Document;
 import com.docquery.document.model.DocumentChunk;
 import com.docquery.document.model.DocumentStatus;
 import com.docquery.document.repository.DocumentChunkRepository;
 import com.docquery.document.repository.DocumentRepository;
+import com.docquery.document.service.AskService;
 import com.docquery.document.service.ChunkService;
 import com.docquery.document.service.DocumentParser;
 import com.docquery.document.service.EmbeddingService;
@@ -36,15 +38,18 @@ public class DocumentController {
     private final DocumentRepository documentRepository;
     private final ParserFactory parserFactory;
     private final ChunkService chunkService;
+    private final AskService askService;
 
     DocumentController(FileStorage fileStorage, DocumentRepository documentRepository, ParserFactory parserFactory,
-            ChunkService chunkService, DocumentChunkRepository documentChunkRepository, EmbeddingService embeddingService) {
+            ChunkService chunkService, DocumentChunkRepository documentChunkRepository,
+            EmbeddingService embeddingService, AskService askService) {
         this.fileStorage = fileStorage;
         this.documentRepository = documentRepository;
         this.parserFactory = parserFactory;
         this.chunkService = chunkService;
         this.documentChunkRepository = documentChunkRepository;
         this.embeddingService = embeddingService;
+        this.askService = askService;
     }
 
     /**
@@ -97,10 +102,29 @@ public class DocumentController {
                     .body(ApiResponse.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Failed to upload file"));
         }
     }
+
+    /**
+     * 问答
+     * 
+     * @param question 问题
+     * @return 问答结果
+     */
+    @PostMapping(value = "/ask")
+    public ResponseEntity<ApiResponse<AskResult>> ask(@RequestParam("question") String question) {
+        try {
+            AskResult askResult = askService.ask(question);
+            return ResponseEntity.ok(ApiResponse.ok(askResult));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
+        }
+    }
+
     private String toVectorString(float[] vector) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < vector.length; i++) {
-            if (i > 0) sb.append(",");
+            if (i > 0)
+                sb.append(",");
             sb.append(vector[i]);
         }
         sb.append("]");
