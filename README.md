@@ -34,7 +34,7 @@ mvn spring-boot:run
 | 分块 | 固定 512 token + 64 overlap | 先跑通链路，后续演进结构感知切片 |
 | 数据库迁移 | Flyway | 从第一天管住 schema 版本 |
 | 存储 | 本地文件（接口抽象） | 零依赖启动，后续可换 MinIO/S3 |
-| 鉴权 | 无（单用户模式） | 聚焦 RAG 链路，鉴权在 xxx 已证明 |
+| 鉴权 | 无（单用户模式） | 聚焦 RAG 链路，鉴权在工作项目已证明 |
 
 ## 本地环境踩坑（面试可讲）
 
@@ -50,10 +50,9 @@ mvn spring-boot:run
 
 | Method | Path | 说明 |
 |--------|------|------|
-| POST | `/api/documents/upload` | 上传文档（PDF/DOCX/TXT） |
-| GET  | `/api/documents` | 文档列表 |
-| POST | `/api/ask` | 知识库问答 |
-| POST | `/api/ask/stream` | 流式问答（SSE） |
+| POST | `/api/document/upload` | 上传文档（PDF/DOCX） |
+| POST | `/api/document/ask` | 同步问答（curl） |
+| POST | `/api/document/ask/stream` | 流式问答（SSE：token / citations / done） |
 
 ## 项目结构
 
