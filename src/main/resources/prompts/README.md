@@ -9,11 +9,11 @@
 - `v1/qa-user.md`
 - `v1/qa-context.md`
 - `v1/qa-refuse-none.md`
-- `v1/qa-guidance-ungated.md`（当前请求使用）
+- `v1/qa-guidance-ungated.md`（知识库模式、闸门未接时使用）
+- `v1/assistant-chat.md`（`mode=CHAT` 日常对话，不检索）
 
 ## 已写、功能后补（面试可打开，勿说已跑通）
 
 - `v1/qa-guidance-none.md` / `weak` / `partial` / `sufficient` — 四级闸门
 - `v1/query-planning-system.md` + `query-planning-user.md` — DIRECT / REWRITE / DECOMPOSE
-- `v1/assistant-chat.md` — ReAct CHAT，不检索
-- `v1/assistant-kb-search.md` — ReAct KB_SEARCH，Observation 程序返回，单轮一次检索
+- `v1/assistant-kb-search.md` — ReAct KB_SEARCH（模型自己决定调工具）；现网知识库仍是页面选 KB 后固定检索，不是 Agent

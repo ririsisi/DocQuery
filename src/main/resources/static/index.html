@@ -27,6 +27,29 @@
         header h1 { font-size: 20px; color: #1a2332; }
         header p { font-size: 13px; color: #8b95a5; margin-top: 4px; }
 
+        .mode-switch {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 12px;
+        }
+
+        .mode-btn {
+            padding: 6px 14px;
+            border: 1px solid #d0d7e2;
+            background: #fff;
+            color: #5f6b7a;
+            border-radius: 16px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .mode-btn.active {
+            background: #1a73e8;
+            border-color: #1a73e8;
+            color: #fff;
+        }
+
         .chat-container {
             width: 100%;
             max-width: 720px;
@@ -172,22 +195,42 @@
 
 <header>
     <h1>📄 DocQuery</h1>
-    <p>上传文档后，在这里提问</p>
+    <p id="modeHint">知识库问答：按制度检索，空证据会拒答</p>
+    <div class="mode-switch">
+        <button type="button" class="mode-btn active" id="btnKb" onclick="setMode('KB')">知识库问答</button>
+        <button type="button" class="mode-btn" id="btnChat" onclick="setMode('CHAT')">日常对话</button>
+    </div>
 </header>
 
 <div class="chat-container">
     <div class="messages" id="messages"></div>
 
     <div class="input-area">
-        <input type="text" id="questionInput" placeholder="输入你的问题..." autofocus>
+        <input type="text" id="questionInput" placeholder="问流程、时限、谁来批…" autofocus>
         <button id="sendBtn" onclick="ask()">发送</button>
     </div>
 </div>
 
 <script>
+    let currentMode = 'KB';
     const messagesEl = document.getElementById('messages');
     const inputEl = document.getElementById('questionInput');
     const sendBtn = document.getElementById('sendBtn');
+    const modeHint = document.getElementById('modeHint');
+
+    function setMode(mode) {
+        currentMode = mode;
+        document.getElementById('btnKb').classList.toggle('active', mode === 'KB');
+        document.getElementById('btnChat').classList.toggle('active', mode === 'CHAT');
+        if (mode === 'CHAT') {
+            modeHint.textContent = '日常对话：不查知识库，不能当制度依据';
+            inputEl.placeholder = '打个招呼，或问我能做什么…';
+        } else {
+            modeHint.textContent = '知识库问答：按制度检索，空证据会拒答';
+            inputEl.placeholder = '问流程、时限、谁来批…';
+        }
+        inputEl.focus();
+    }
 
     // 发送消息滚动到底部
     function scrollToBottom() {
@@ -234,6 +277,19 @@
         return `<details class="citations"><summary>📎 ${citations.length} 条引用</summary>${items}</details>`;
     }
 
+    function parseSseBlock(block) {
+        let event = 'message';
+        const dataLines = [];
+        for (const raw of block.split('\n')) {
+            const line = raw.replace(/\r$/, '');
+            if (!line || line.startsWith(':')) continue;
+            if (line.startsWith('event:')) event = line.slice(6).trim();
+            else if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''));
+        }
+        if (dataLines.length === 0) return null;
+        return { event, data: dataLines.join('\n') };
+    }
+
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -253,17 +309,50 @@
         sendBtn.disabled = true;
 
         try {
-            const resp = await fetch(`/api/document/ask?question=${encodeURIComponent(question)}`, { method: 'POST' });
-            const json = await resp.json();
+            const resp = await fetch(`/api/document/ask/stream?question=${encodeURIComponent(question)}&mode=${encodeURIComponent(currentMode)}`, {
+                method: 'POST',
+                headers: { 'Accept': 'text/event-stream' }
+            });
+            if (!resp.ok || !resp.body) {
+                hideLoading();
+                addMessage('assistant', `<p style="color:#d93025;">出错了：HTTP ${resp.status}</p>`);
+                return;
+            }
 
             hideLoading();
+            const msg = addMessage('assistant', `<p class="stream-text"></p>`);
+            const bubble = msg.querySelector('.bubble');
+            const textEl = msg.querySelector('.stream-text');
+            let answer = '';
+            let citations = [];
 
-            if (json.status === 200 && json.data) {
-                const answerHtml = formatAnswer(json.data.answer);
-                const citationsHtml = buildCitations(json.data.citations);
-                addMessage('assistant', answerHtml + citationsHtml);
-            } else {
-                addMessage('assistant', `<p style="color:#d93025;">出错了：${escapeHtml(json.message || '未知错误')}</p>`);
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            let buf = '';
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                buf += decoder.decode(value, { stream: true });
+                const blocks = buf.split('\n\n');
+                buf = blocks.pop();
+                for (const block of blocks) {
+                    const parsed = parseSseBlock(block);
+                    if (!parsed) continue;
+                    if (parsed.event === 'token') {
+                        answer += parsed.data;
+                        textEl.textContent = answer;
+                        scrollToBottom();
+                    } else if (parsed.event === 'citations') {
+                        try { citations = JSON.parse(parsed.data); } catch (_) { citations = []; }
+                    } else if (parsed.event === 'error') {
+                        bubble.innerHTML = `<p style="color:#d93025;">${escapeHtml(parsed.data || '生成失败')}</p>`;
+                    } else if (parsed.event === 'done') {
+                        bubble.innerHTML = formatAnswer(answer) + buildCitations(citations);
+                    }
+                }
+            }
+            if (answer && !bubble.querySelector('.citations') && !bubble.querySelector('[style]')) {
+                bubble.innerHTML = formatAnswer(answer) + buildCitations(citations);
             }
         } catch (err) {
             hideLoading();

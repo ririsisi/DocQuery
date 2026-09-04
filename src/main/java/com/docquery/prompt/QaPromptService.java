@@ -39,6 +39,7 @@ public class QaPromptService {
             "assistant-kb-search.md");
 
     private final String systemTemplate;
+    private final String chatSystemTemplate;
     private final String userTemplate;
     private final String contextTemplate;
     private final String refuseNone;
@@ -50,6 +51,7 @@ public class QaPromptService {
             read(base + file);
         }
         this.systemTemplate = read(base + "qa-system.md");
+        this.chatSystemTemplate = read(base + "assistant-chat.md");
         this.userTemplate = read(base + "qa-user.md");
         this.contextTemplate = read(base + "qa-context.md");
         this.refuseNone = read(base + "qa-refuse-none.md").trim();
@@ -58,6 +60,10 @@ public class QaPromptService {
 
     public String system() {
         return systemTemplate;
+    }
+
+    public String chatSystem() {
+        return chatSystemTemplate;
     }
 
     public String refuseWhenNoEvidence() {

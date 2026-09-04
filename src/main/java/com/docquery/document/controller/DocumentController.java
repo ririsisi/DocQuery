@@ -5,7 +5,9 @@ import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -13,8 +15,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.docquery.common.ApiResponse;
+import com.docquery.document.model.AskMode;
 import com.docquery.document.model.AskResult;
 import com.docquery.document.model.Document;
 import com.docquery.document.model.DocumentChunk;
@@ -39,10 +45,12 @@ public class DocumentController {
     private final ParserFactory parserFactory;
     private final ChunkService chunkService;
     private final AskService askService;
+    private final long sseTimeoutMs;
 
     DocumentController(FileStorage fileStorage, DocumentRepository documentRepository, ParserFactory parserFactory,
             ChunkService chunkService, DocumentChunkRepository documentChunkRepository,
-            EmbeddingService embeddingService, AskService askService) {
+            EmbeddingService embeddingService, AskService askService,
+            @Value("${docquery.sse.timeout-ms:60000}") long sseTimeoutMs) {
         this.fileStorage = fileStorage;
         this.documentRepository = documentRepository;
         this.parserFactory = parserFactory;
@@ -50,6 +58,7 @@ public class DocumentController {
         this.documentChunkRepository = documentChunkRepository;
         this.embeddingService = embeddingService;
         this.askService = askService;
+        this.sseTimeoutMs = sseTimeoutMs;
     }
 
     /**
@@ -110,14 +119,35 @@ public class DocumentController {
      * @return 问答结果
      */
     @PostMapping(value = "/ask")
-    public ResponseEntity<ApiResponse<AskResult>> ask(@RequestParam("question") String question) {
+    public ResponseEntity<ApiResponse<AskResult>> ask(
+            @RequestParam("question") String question,
+            @RequestParam(value = "mode", defaultValue = "KB") String mode) {
         try {
-            AskResult askResult = askService.ask(question);
+            AskResult askResult = askService.ask(question, AskMode.fromParam(mode));
             return ResponseEntity.ok(ApiResponse.ok(askResult));
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.fail(HttpStatus.INTERNAL_SERVER_ERROR.value(), e.getMessage()));
         }
+    }
+
+    /**
+     * 流式问答：token / citations / done / error，注释心跳防网关掐连接。
+     * mode=CHAT 不检索；默认 KB。
+     */
+    @PostMapping(value = "/ask/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter askStream(
+            @RequestParam("question") String question,
+            @RequestParam(value = "mode", defaultValue = "KB") String mode,
+            HttpServletResponse response) {
+        AskMode askMode = AskMode.fromParam(mode);
+        response.setHeader("Cache-Control", "no-cache");
+        response.setHeader("X-Accel-Buffering", "no");
+        SseEmitter emitter = new SseEmitter(sseTimeoutMs);
+        askService.askStream(question, askMode, emitter);
+        return emitter;
     }
 
     private String toVectorString(float[] vector) {

@@ -18,7 +18,7 @@
 | `qa-user.md` 等级契约 | 模型自己把弱证据说成确定 | 闸门后补，现在传「未分级」 |
 | `qa-guidance-*.md` | 四套 Java 答案模板 | 指导语文件化，lookup 后注入 |
 | `query-planning-*.md` | 一句多问只检索半句；乱拆查询 | 规划后补；失败降级 DIRECT |
-| `assistant-chat.md` | 闲聊却编制度 | ReAct CHAT 后补 |
+| `assistant-chat.md` | 闲聊却编制度 | 页面 `mode=CHAT` 已接线，不检索 |
 | `assistant-kb-search.md` | 模型伪造 Observation、连搜多次 | ReAct KB_SEARCH 后补 |
 
 仍不做：提示词平台、JSON 答句契约（要升 v2 + 黄金集）、三级记忆模板。

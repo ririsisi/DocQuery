@@ -51,8 +51,8 @@ mvn spring-boot:run
 | Method | Path | 说明 |
 |--------|------|------|
 | POST | `/api/document/upload` | 上传文档（PDF/DOCX） |
-| POST | `/api/document/ask` | 同步问答（curl） |
-| POST | `/api/document/ask/stream` | 流式问答（SSE：token / citations / done） |
+| POST | `/api/document/ask` | 同步问答（`mode=KB` 默认检索；`mode=CHAT` 不检索） |
+| POST | `/api/document/ask/stream` | 流式问答（同上 `mode`；SSE：token / citations / done） |
 
 ## 项目结构
 
