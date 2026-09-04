@@ -5,7 +5,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.dashscope.QwenChatModel;
+import dev.langchain4j.model.dashscope.QwenStreamingChatModel;
 
 @Configuration
 public class LangChain4jConfig {
@@ -25,6 +27,16 @@ public class LangChain4jConfig {
     @Bean
     public ChatLanguageModel chatLanguageModel() {
         return QwenChatModel.builder()
+                .apiKey(apiKey)
+                .modelName(modelName)
+                .temperature(temperature)
+                .maxTokens(maxTokens)
+                .build();
+    }
+
+    @Bean
+    public StreamingChatLanguageModel streamingChatLanguageModel() {
+        return QwenStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .modelName(modelName)
                 .temperature(temperature)

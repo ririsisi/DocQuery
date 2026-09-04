@@ -62,3 +62,6 @@ docquery:
     local-path: ./uploads
   prompt:
     version: v1
+  sse:
+    timeout-ms: 60000
+    heartbeat-ms: 15000
