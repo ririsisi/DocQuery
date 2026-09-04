@@ -9,20 +9,27 @@ import com.docquery.document.model.AskResult;
 import com.docquery.document.model.Citation;
 import com.docquery.document.model.DocumentChunk;
 import com.docquery.document.repository.DocumentChunkRepository;
+import com.docquery.prompt.QaPromptService;
 
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.output.Response;
 
 @Service
 public class AskService {
     private final EmbeddingService embeddingService;
     private final DocumentChunkRepository documentChunkRepository;
     private final ChatLanguageModel chatLanguageModel;
+    private final QaPromptService qaPromptService;
 
     public AskService(EmbeddingService embeddingService, DocumentChunkRepository documentChunkRepository,
-            ChatLanguageModel chatLanguageModel) {
+            ChatLanguageModel chatLanguageModel, QaPromptService qaPromptService) {
         this.embeddingService = embeddingService;
         this.documentChunkRepository = documentChunkRepository;
         this.chatLanguageModel = chatLanguageModel;
+        this.qaPromptService = qaPromptService;
     }
 
     /**
@@ -32,18 +39,24 @@ public class AskService {
      * @return
      */
     public AskResult ask(String question) {
-        // 先将用户问题转换为向量
         float[] vector = embeddingService.embed(question);
         String vectorStr = toVectorString(vector);
-        // 问题转换为向量后，在数据库中检索相似的文档片段
         List<DocumentChunk> documentChunks = documentChunkRepository.findSimilarByEmbedding(vectorStr, 5);
-        // 将文档片段拼接成一个字符串
-        String documentChunksContent = documentChunks.stream().map(DocumentChunk::getContent)
-                .collect(Collectors.joining("\n"));
-        String response = chatLanguageModel.generate(documentChunksContent + "\n" + question);
-        List<Citation> citations = documentChunks.stream().map(chunk -> new Citation(chunk.getId(), chunk.getContent()))
+
+        List<Citation> citations = documentChunks.stream()
+                .map(chunk -> new Citation(chunk.getId(), chunk.getContent()))
                 .collect(Collectors.toList());
-        return new AskResult(response, citations);
+
+        if (documentChunks.isEmpty()) {
+            return new AskResult(qaPromptService.refuseWhenNoEvidence(), citations);
+        }
+
+        String user = qaPromptService.renderUser(question, documentChunks, QaPromptService.LEVEL_UNGATED,
+                qaPromptService.ungatedGuidance());
+        Response<AiMessage> response = chatLanguageModel.generate(
+                SystemMessage.from(qaPromptService.system()),
+                UserMessage.from(user));
+        return new AskResult(response.content().text(), citations);
     }
 
     /**

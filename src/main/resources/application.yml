@@ -60,3 +60,5 @@ docquery:
   storage:
     type: local
     local-path: ./uploads
+  prompt:
+    version: v1
