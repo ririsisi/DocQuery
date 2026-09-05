@@ -1,0 +1,510 @@
+{
+  "version": "v1.4",
+  "note": "仿制度黄金集。正例看 Hit@5 / Hit@1 / rank / MRR。回归=proper_noun+paraphrase；hard=短问；noisy=错字缩写；negative=易识别负例；adversarial=用了库里的词但制度没写。负例不计入命中。未跑评测前禁止把数字写进简历。",
+  "items": [
+    {
+      "id": "G01",
+      "type": "proper_noun",
+      "question": "新增服务商时，服务商名称能不能自己敲？从哪来？",
+      "expected_doc": "仿-服务商管理.md",
+      "expected_hit_contains": "只能从采购供应链同步表中选择",
+      "answer_points": "不能手工填写，只能从采购供应链同步表选择",
+      "expect_refuse": false
+    },
+    {
+      "id": "G02",
+      "type": "proper_noun",
+      "question": "待审核服务商这个页签谁能看？提交之后谁审？",
+      "expected_doc": "仿-服务商管理.md",
+      "expected_hit_contains": "服务商审核岗",
+      "answer_points": "仅服务商审核岗可见并审核",
+      "expect_refuse": false
+    },
+    {
+      "id": "G03",
+      "type": "proper_noun",
+      "question": "订单还没开始、开始月份比当前月大，第三方工时核算单哪天出？",
+      "expected_doc": "仿-第三方工时核算.md",
+      "expected_hit_contains": "每个月 22 号凌晨",
+      "answer_points": "每个月 22 号凌晨生成当月工时核算单",
+      "expect_refuse": false
+    },
+    {
+      "id": "G04",
+      "type": "proper_noun",
+      "question": "评估清单来自需求管理平台选「是」时，必须上传什么？tsk 编号怎么校验？",
+      "expected_doc": "仿-第三方工时核算.md",
+      "expected_hit_contains": "需求清单（ReqSheet）",
+      "answer_points": "必须传需求清单和评估材料；tsk 须在运管平台存在",
+      "expect_refuse": false
+    },
+    {
+      "id": "G05",
+      "type": "proper_noun",
+      "question": "人天单价模式下结算金额怎么算？",
+      "expected_doc": "仿-第三方工时核算.md",
+      "expected_hit_contains": "结算金额 = 评估金额 − 赠送金额",
+      "answer_points": "评估金额减赠送金额；赠送=评估金额×赠送比例",
+      "expect_refuse": false
+    },
+    {
+      "id": "G06",
+      "type": "proper_noun",
+      "question": "ABCD 模式下总评估工作量怎么加？",
+      "expected_doc": "仿-第三方工时核算.md",
+      "expected_hit_contains": "总评估工作量 = A+B+C+D 评估工作量",
+      "answer_points": "四类评估工作量相加",
+      "expect_refuse": false
+    },
+    {
+      "id": "G07",
+      "type": "proper_noun",
+      "question": "人员信息同步接口必填哪个调用系统标识？路径是什么？",
+      "expected_doc": "仿-人员信息同步接口.md",
+      "expected_hit_contains": "sourceSystem",
+      "answer_points": "必填 sourceSystem；路径 /api/external/user/syncUserInfo",
+      "expect_refuse": false
+    },
+    {
+      "id": "G08",
+      "type": "proper_noun",
+      "question": "统一用户同步回来的 status 等于 3 是什么意思？",
+      "expected_doc": "仿-人员信息同步接口.md",
+      "expected_hit_contains": "3 离职",
+      "answer_points": "离职，不能再当有效用户",
+      "expect_refuse": false
+    },
+    {
+      "id": "G09",
+      "type": "proper_noun",
+      "question": "批量创建主账号走哪条路径？提交人字段叫什么？",
+      "expected_doc": "仿-创建主账号接口.md",
+      "expected_hit_contains": "/api/external/user/batchCreate",
+      "answer_points": "POST batchCreate，提交人字段 applyUser",
+      "expect_refuse": false
+    },
+    {
+      "id": "G10",
+      "type": "proper_noun",
+      "question": "预估固定合同的人天项目，发起结算付款前还要完成哪项盘点？",
+      "expected_doc": "仿-结算付款.md",
+      "expected_hit_contains": "人员投入盘点",
+      "answer_points": "人员投入盘点、工时核算、日常考核都要关闭",
+      "expect_refuse": false
+    },
+    {
+      "id": "G11",
+      "type": "paraphrase",
+      "question": "供应商接口人想把新公司登进系统，第一步点哪里？",
+      "expected_doc": "仿-服务商管理.md",
+      "expected_hit_contains": "服务商查询 — 「新增」",
+      "answer_points": "服务商查询里点新增；权限是服务商接口人",
+      "expect_refuse": false
+    },
+    {
+      "id": "G12",
+      "type": "paraphrase",
+      "question": "核算管理员觉得评估材料不行，工时单会退到哪个状态？",
+      "expected_doc": "仿-第三方工时核算.md",
+      "expected_hit_contains": "待上传评估材料",
+      "answer_points": "多数不通过退回待上传评估材料",
+      "expect_refuse": false
+    },
+    {
+      "id": "G13",
+      "type": "paraphrase",
+      "question": "日常考核里安全和运管分别发给谁打？",
+      "expected_doc": "仿-日常考核.md",
+      "expected_hit_contains": "安全考核 → 安全管理员",
+      "answer_points": "安全给安全管理员，运管给外包管理员，服务给项目负责人",
+      "expect_refuse": false
+    },
+    {
+      "id": "G14",
+      "type": "paraphrase",
+      "question": "日常考核单的标题是系统怎么拼出来的？",
+      "expected_doc": "仿-日常考核.md",
+      "expected_hit_contains": "业务活动名称 + YYYY年MM月 + 「日常考核」",
+      "answer_points": "活动名+年月+日常考核",
+      "expect_refuse": false
+    },
+    {
+      "id": "G15",
+      "type": "paraphrase",
+      "question": "厂商想请款，什么情况下系统才让发起结算付款？",
+      "expected_doc": "仿-结算付款.md",
+      "expected_hit_contains": "均已关闭",
+      "answer_points": "关联月份相关工单关闭后才能发起",
+      "expect_refuse": false
+    },
+    {
+      "id": "G16",
+      "type": "paraphrase",
+      "question": "框架合同非人天项目，局方负责人还要确认供应链哪张单子过了？",
+      "expected_doc": "仿-结算付款.md",
+      "expected_hit_contains": "费用结算单",
+      "answer_points": "省侧采购供应链费用结算单已审批",
+      "expect_refuse": false
+    },
+    {
+      "id": "G17",
+      "type": "paraphrase",
+      "question": "外包人员入职开主账号，除了姓名手机，合作商和局方接口人要不要传？",
+      "expected_doc": "仿-创建主账号接口.md",
+      "expected_hit_contains": "vendorName",
+      "answer_points": "vendorName、vendorId、supervisor 都是必填",
+      "expect_refuse": false
+    },
+    {
+      "id": "G18",
+      "type": "paraphrase",
+      "question": "同步接口一次能不能同时带回在职和已经走了的人？",
+      "expected_doc": "仿-人员信息同步接口.md",
+      "expected_hit_contains": "离职（status=3）",
+      "answer_points": "可以，调用方按 status 更新，离职账号不能再用",
+      "expect_refuse": false
+    },
+    {
+      "id": "G19",
+      "type": "negative",
+      "question": "请年假要找哪一级经理批？最长可以请几天？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "制度未写，应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G20",
+      "type": "negative",
+      "question": "生产主机宕机的故障SLA是不是4小时必须恢复？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "未写 SLA，应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G21",
+      "type": "negative",
+      "question": "4A 账号锁定了怎么解锁？找谁开权限？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "未写 4A，应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G22",
+      "type": "negative",
+      "question": "差旅报销飞机票限额是多少？发票丢了怎么办？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "未写报销，应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G23",
+      "type": "negative",
+      "question": "统一用户生产环境的内网 IP 和真实域名是什么？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "仿制度明确不提供真实地址，应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G24",
+      "type": "negative",
+      "question": "食堂订餐截止到每天几点？周末开不开？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "无关流程，应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G25",
+      "type": "proper_noun",
+      "question": "省公司的业务活动是先有活动还是先有订单？地市呢？",
+      "expected_doc": "仿-业务活动与预算.md",
+      "expected_hit_contains": "先有业务活动，再下任务订单",
+      "answer_points": "省侧先活动再订单且带年份；地市先同步订单再生成活动、无年份",
+      "expect_refuse": false
+    },
+    {
+      "id": "G26",
+      "type": "proper_noun",
+      "question": "去年的考核和工时都结束了，业务活动谁关？多久不点会怎样？",
+      "expected_doc": "仿-业务活动与预算.md",
+      "expected_hit_contains": "一个月未操作，系统自动改为已关闭",
+      "answer_points": "给项目负责人确认待办；一个月未操作自动关闭",
+      "expect_refuse": false
+    },
+    {
+      "id": "G27",
+      "type": "proper_noun",
+      "question": "预算导入已经带齐补充字段，下达之后还要不要再补业务活动信息？",
+      "expected_doc": "仿-业务活动与预算.md",
+      "expected_hit_contains": "直接进入执行中，跳过补充环节",
+      "answer_points": "新路径下达后跳过补充，直接执行中",
+      "expect_refuse": false
+    },
+    {
+      "id": "G28",
+      "type": "proper_noun",
+      "question": "单项合同能不能下订单？要不要同步到供应链？",
+      "expected_doc": "仿-任务订单.md",
+      "expected_hit_contains": "只保存、不同步采购供应链",
+      "answer_points": "可以关联保存，不同步供应链，仍算未圈金额",
+      "expect_refuse": false
+    },
+    {
+      "id": "G29",
+      "type": "proper_noun",
+      "question": "工时考核是 0 工时，主管还要不要进系统点通过？",
+      "expected_doc": "仿-工时核算作业规则.md",
+      "expected_hit_contains": "0 工时的主管审批改为自动通过",
+      "answer_points": "自动通过；21 号邮件阅知",
+      "expect_refuse": false
+    },
+    {
+      "id": "G30",
+      "type": "paraphrase",
+      "question": "项目负责人和核算管理员是同一个人，厂商审完工时单下一步给谁？",
+      "expected_doc": "仿-工时核算作业规则.md",
+      "expected_hit_contains": "工单送给外包审核",
+      "answer_points": "同一人则厂商审完送外包审核；不同人送项目负责人",
+      "expect_refuse": false
+    },
+    {
+      "id": "G31",
+      "type": "proper_noun",
+      "question": "工时结算金额和供应链计提差多少就不能提交？",
+      "expected_doc": "仿-工时核算作业规则.md",
+      "expected_hit_contains": "正负 3% 以内",
+      "answer_points": "差值须在正负 3% 以内，否则改结算金额",
+      "expect_refuse": false
+    },
+    {
+      "id": "G32",
+      "type": "paraphrase",
+      "question": "日常考核这次只扣了三千，提交时系统会拦吗？",
+      "expected_doc": "仿-日常考核.md",
+      "expected_hit_contains": "扣款金额低于 5000 元",
+      "answer_points": "低于 5000 弹出确认，确定仍可提交，取消留下改",
+      "expect_refuse": false
+    },
+    {
+      "id": "G33",
+      "type": "proper_noun",
+      "question": "建研效工单时，网格长选的就是我自己，单子到谁手里？状态是什么？",
+      "expected_doc": "仿-研效工单.md",
+      "expected_hit_contains": "状态「待分配」",
+      "answer_points": "到网格开发经理，状态待分配",
+      "expect_refuse": false
+    },
+    {
+      "id": "G34",
+      "type": "paraphrase",
+      "question": "研效工单还在流转，谁能把单子取消掉？",
+      "expected_doc": "仿-研效工单.md",
+      "expected_hit_contains": "建单人或网格长都可以取消",
+      "answer_points": "建单人或网格长；取消是表单全局按钮",
+      "expect_refuse": false
+    },
+    {
+      "id": "G35",
+      "type": "proper_noun",
+      "question": "研效工单一次能传几个附件？",
+      "expected_doc": "仿-研效工单.md",
+      "expected_hit_contains": "附件只能上传一份",
+      "answer_points": "只能一份，多份先打包",
+      "expect_refuse": false
+    },
+    {
+      "id": "G36",
+      "type": "proper_noun",
+      "question": "开源软件准入领导那一关是一个人签还是会签？",
+      "expected_doc": "仿-开源软件准入.md",
+      "expected_hit_contains": "需求侧领导 + 安全侧领导",
+      "answer_points": "需求侧和安全侧两位领导会签",
+      "expect_refuse": false
+    },
+    {
+      "id": "G37",
+      "type": "paraphrase",
+      "question": "开源包扫没扫过许可证，运管平台准入流程会替我验吗？",
+      "expected_doc": "仿-开源软件准入.md",
+      "expected_hit_contains": "不做软件包内容校验",
+      "answer_points": "本系统只审流程，不校验包",
+      "expect_refuse": false
+    },
+    {
+      "id": "G38",
+      "type": "proper_noun",
+      "question": "防火墙规则矩阵里源到目的的动作编号是 0，工单能不能提交？",
+      "expected_doc": "仿-防火墙申请.md",
+      "expected_hit_contains": "不允许提交",
+      "answer_points": "0 表示拒绝访问，不能提交，联系安全部",
+      "expect_refuse": false
+    },
+    {
+      "id": "G39",
+      "type": "proper_noun",
+      "question": "一张防火墙工单已经有 10 条策略，还能再加一条吗？",
+      "expected_doc": "仿-防火墙申请.md",
+      "expected_hit_contains": "最多 10 条策略",
+      "answer_points": "不能，第 11 条要另开一张工单",
+      "expect_refuse": false
+    },
+    {
+      "id": "G40",
+      "type": "proper_noun",
+      "question": "专项审计一个问题挂了三个责任人，待办会生成几条？",
+      "expected_doc": "仿-专项审计.md",
+      "expected_hit_contains": "待办按人生成多条",
+      "answer_points": "主表一条，待办按人三条",
+      "expect_refuse": false
+    },
+    {
+      "id": "G41",
+      "type": "hard",
+      "question": "vendorName 必填吗？",
+      "expected_doc": "仿-创建主账号接口.md",
+      "expected_hit_contains": "vendorName | 合作商名称",
+      "answer_points": "入职开主账号 items 里合作商名称必填，不是厂商主数据那条选填显示名",
+      "expect_refuse": false
+    },
+    {
+      "id": "G42",
+      "type": "hard",
+      "question": "工时核算单哪天出？",
+      "expected_doc": "仿-第三方工时核算.md",
+      "expected_hit_contains": "每个月 22 号凌晨生成当月的第三方工时核算单",
+      "answer_points": "现行是每月 22 号凌晨，不是旧口径 1 号",
+      "expect_refuse": false
+    },
+    {
+      "id": "G43",
+      "type": "hard",
+      "question": "applyUser 是什么？",
+      "expected_doc": "仿-创建主账号接口.md",
+      "expected_hit_contains": "提交人/操作人账号，用于审计与接口权限校验",
+      "answer_points": "batchCreate 的提交人账号，不是厂商主数据里的申请人中文名",
+      "expect_refuse": false
+    },
+    {
+      "id": "G44",
+      "type": "hard",
+      "question": "syncUserInfo 的 sourceSystem 示例填什么？",
+      "expected_doc": "仿-人员信息同步接口.md",
+      "expected_hit_contains": "DOC_OPS",
+      "answer_points": "人员同步示例是 DOC_OPS，不是 VENDOR_HUB 或 UNIFIED_IAM",
+      "expect_refuse": false
+    },
+    {
+      "id": "G45",
+      "type": "hard",
+      "question": "结算金额和计提差多少不能提交？",
+      "expected_doc": "仿-工时核算作业规则.md",
+      "expected_hit_contains": "正负 3% 以内",
+      "answer_points": "现行正负 3%，不是预警草稿的 5%",
+      "expect_refuse": false
+    },
+    {
+      "id": "G46",
+      "type": "hard",
+      "question": "日常考核扣三千系统怎么处理？",
+      "expected_doc": "仿-日常考核.md",
+      "expected_hit_contains": "扣款金额低于 5000 元",
+      "answer_points": "低于 5000 弹确认仍可提交，不是草稿里的 3000 禁提交",
+      "expect_refuse": false
+    },
+    {
+      "id": "G47",
+      "type": "hard",
+      "question": "部门工时哪天出单？",
+      "expected_doc": "仿-部门工时核算.md",
+      "expected_hit_contains": "不得把「每月 22 号凌晨出单」说成部门工时",
+      "answer_points": "部门工时没写出单日，不能拿第三方 22 号或旧口径 1 号顶替",
+      "expect_refuse": false
+    },
+    {
+      "id": "G48",
+      "type": "hard",
+      "question": "batchCreate",
+      "expected_doc": "仿-创建主账号接口.md",
+      "expected_hit_contains": "/api/external/user/batchCreate",
+      "answer_points": "入职批量开主账号路径，不是 vendor/syncMaster",
+      "expect_refuse": false
+    },
+    {
+      "id": "G49",
+      "type": "adversarial",
+      "question": "vendorName 能不能填简称，或者和合同主体不一致的名字？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "入职接口只写必填合作商名称，未写可否简称；应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G50",
+      "type": "adversarial",
+      "question": "第三方工时核算单 22 号出完当天，能不能直接发起结算付款？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "出单日和发起结算不是同一条款，当天能否发起未写；应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G51",
+      "type": "adversarial",
+      "question": "调 syncUserInfo 时 sourceSystem 填 UNIFIED_IAM 行不行？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "UNIFIED_IAM 是开主账号示例，人员同步示例是 DOC_OPS，未写可否混用；应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G52",
+      "type": "adversarial",
+      "question": "防火墙动作编号是 1，要不要联系安全部才能提交？",
+      "expected_doc": "",
+      "expected_hit_contains": "",
+      "answer_points": "只写了动作 0 不允许提交，编号 1 未写；应拒答",
+      "expect_refuse": true
+    },
+    {
+      "id": "G53",
+      "type": "noisy",
+      "question": "vnedorName 必填吗？",
+      "expected_doc": "仿-创建主账号接口.md",
+      "expected_hit_contains": "vendorName | 合作商名称",
+      "answer_points": "错字仍应落到入职开主账号的合作商必填",
+      "expect_refuse": false
+    },
+    {
+      "id": "G54",
+      "type": "noisy",
+      "question": "工时单几号出",
+      "expected_doc": "仿-第三方工时核算.md",
+      "expected_hit_contains": "每个月 22 号凌晨生成当月的第三方工时核算单",
+      "answer_points": "口语短问，现行仍是 22 号不是 1 号",
+      "expect_refuse": false
+    },
+    {
+      "id": "G55",
+      "type": "noisy",
+      "question": "batchCreat 路径是啥",
+      "expected_doc": "仿-创建主账号接口.md",
+      "expected_hit_contains": "/api/external/user/batchCreate",
+      "answer_points": "少写一个 e，仍应命中入职批量开账号路径",
+      "expect_refuse": false
+    },
+    {
+      "id": "G56",
+      "type": "noisy",
+      "question": "结算和计提差几个点不能交",
+      "expected_doc": "仿-工时核算作业规则.md",
+      "expected_hit_contains": "正负 3% 以内",
+      "answer_points": "口语问 3%，不是预警草稿的 5%",
+      "expect_refuse": false
+    }
+  ]
+}

@@ -1,18 +1,25 @@
 package com.docquery.document.service;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.docquery.document.model.AskMode;
 import com.docquery.document.model.AskResult;
+import com.docquery.document.model.AskTiming;
 import com.docquery.document.model.Citation;
 import com.docquery.document.model.DocumentChunk;
+import com.docquery.document.model.EvidenceLevel;
+import com.docquery.document.model.EvidenceWindow;
+import com.docquery.document.model.RetrievalSnapshot;
 import com.docquery.document.repository.DocumentChunkRepository;
 import com.docquery.document.sse.AskSseSession;
 import com.docquery.prompt.QaPromptService;
@@ -25,8 +32,11 @@ import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.output.Response;
 
+/** 问答主链。CHAT 不检索；KB 双路 RRF → 类簇 ±1 → 四级闸门。流式放到工作线程，避免堵住 Tomcat 工作线程。 */
 @Service
 public class AskService {
+    private static final Logger log = LoggerFactory.getLogger(AskService.class);
+
     private final EmbeddingService embeddingService;
     private final DocumentChunkRepository documentChunkRepository;
     private final ChatLanguageModel chatLanguageModel;
@@ -51,20 +61,35 @@ public class AskService {
     }
 
     public AskResult ask(String question, AskMode mode) {
+        String requestId = newRequestId();
+        long totalStart = System.nanoTime();
+        // 闲聊不当制度依据；空检索拒答会像故障
         if (mode == AskMode.CHAT) {
+            long llmStart = System.nanoTime();
             Response<AiMessage> response = chatLanguageModel.generate(
                     SystemMessage.from(qaPromptService.chatSystem()),
                     UserMessage.from(question));
-            return new AskResult(response.content().text(), List.of());
+            logTiming(new AskTiming(requestId, mode, 0, 0, AskTiming.millisSince(llmStart),
+                    AskTiming.millisSince(totalStart)));
+            return new AskResult(response.content().text(), List.of(), null);
         }
-        PreparedAsk prepared = prepare(question);
-        if (prepared.chunks().isEmpty()) {
-            return new AskResult(qaPromptService.refuseWhenNoEvidence(), prepared.citations());
+        RetrievalSnapshot snapshot = retrieve(question, requestId);
+        if (snapshot.level() == EvidenceLevel.NONE) {
+            // 只有 NONE 不调生成；WEAK 仍走模型
+            logTiming(new AskTiming(requestId, mode, snapshot.embedMs(), snapshot.retrieveMs(), 0,
+                    AskTiming.millisSince(totalStart)));
+            return new AskResult(qaPromptService.refuseWhenNoEvidence(), snapshot.citations(),
+                    EvidenceLevel.NONE.name());
         }
+        long llmStart = System.nanoTime();
+        String userPrompt = qaPromptService.renderUser(question, snapshot.evidence(),
+                qaPromptService.levelLabel(snapshot.level()), qaPromptService.guidance(snapshot.level()));
         Response<AiMessage> response = chatLanguageModel.generate(
                 SystemMessage.from(qaPromptService.system()),
-                UserMessage.from(prepared.userPrompt()));
-        return new AskResult(response.content().text(), prepared.citations());
+                UserMessage.from(userPrompt));
+        logTiming(new AskTiming(requestId, mode, snapshot.embedMs(), snapshot.retrieveMs(),
+                AskTiming.millisSince(llmStart), AskTiming.millisSince(totalStart)));
+        return new AskResult(response.content().text(), snapshot.citations(), snapshot.level().name());
     }
 
     public void askStream(String question, AskMode mode, SseEmitter emitter) {
@@ -72,27 +97,69 @@ public class AskService {
         streamExecutor.execute(() -> streamOnWorker(question, mode, session));
     }
 
+    public RetrievalSnapshot retrieve(String question) {
+        return retrieve(question, newRequestId());
+    }
+
+    public RetrievalSnapshot retrieve(String question, String requestId) {
+        long embedStart = System.nanoTime();
+        float[] vector = embeddingService.embed(question);
+        long embedMs = AskTiming.millisSince(embedStart);
+        String vectorStr = toVectorString(vector);
+        long retrieveStart = System.nanoTime();
+        // 各路先多取再融合，避免只在 Top5 里做 RRF
+        List<DocumentChunk> vectorHits = documentChunkRepository.findSimilarByEmbedding(vectorStr,
+                RrfFusion.CANDIDATE_K);
+        List<DocumentChunk> keywordHits = question == null || question.isBlank()
+                ? List.of()
+                : documentChunkRepository.findSimilarByTrigram(question, RrfFusion.CANDIDATE_K);
+        List<RrfFusion.RankedHit> ranked = RrfFusion.fuseRanked(vectorHits, keywordHits, RrfFusion.FINAL_K);
+        List<DocumentChunk> hits = ranked.stream().map(RrfFusion.RankedHit::chunk).collect(Collectors.toList());
+        List<EvidenceWindow> evidence = ClusterWindow.clusterAndExpand(ranked,
+                documentChunkRepository::findByDocumentIdAndChunkIndexBetweenOrderByChunkIndexAsc);
+        EvidenceLevel level = EvidenceGate.evaluate(evidence);
+        long retrieveMs = AskTiming.millisSince(retrieveStart);
+        log.info("retrieve.rrf requestId={} vector={} keyword={} fused={}", requestId, vectorHits.size(),
+                keywordHits.size(), hits.size());
+        log.info("retrieve.cluster requestId={} hits={} clusters={}", requestId, hits.size(), evidence.size());
+        log.info("retrieve.gate requestId={} level={} clusters={}", requestId, level, evidence.size());
+        List<Citation> citations = evidence.stream()
+                .map(window -> new Citation(window.primaryChunkId(), window.content()))
+                .collect(Collectors.toList());
+        return new RetrievalSnapshot(requestId, hits, evidence, level, citations, embedMs, retrieveMs);
+    }
+
     private void streamOnWorker(String question, AskMode mode, AskSseSession session) {
+        String requestId = newRequestId();
+        long totalStart = System.nanoTime();
         try {
             if (mode == AskMode.CHAT) {
                 session.send("citations", List.of());
-                streamGenerate(qaPromptService.chatSystem(), question, session);
+                streamGenerate(qaPromptService.chatSystem(), question, session, requestId, mode, 0, 0, totalStart);
                 return;
             }
-            PreparedAsk prepared = prepare(question);
-            session.send("citations", prepared.citations());
-            if (prepared.chunks().isEmpty()) {
+            RetrievalSnapshot snapshot = retrieve(question, requestId);
+            session.send("evidence", snapshot.level().name());
+            session.send("citations", snapshot.citations());
+            if (snapshot.level() == EvidenceLevel.NONE) {
                 session.send("token", qaPromptService.refuseWhenNoEvidence());
+                logTiming(new AskTiming(requestId, mode, snapshot.embedMs(), snapshot.retrieveMs(), 0,
+                        AskTiming.millisSince(totalStart)));
                 session.complete();
                 return;
             }
-            streamGenerate(qaPromptService.system(), prepared.userPrompt(), session);
+            String userPrompt = qaPromptService.renderUser(question, snapshot.evidence(),
+                    qaPromptService.levelLabel(snapshot.level()), qaPromptService.guidance(snapshot.level()));
+            streamGenerate(qaPromptService.system(), userPrompt, session, requestId, mode, snapshot.embedMs(),
+                    snapshot.retrieveMs(), totalStart);
         } catch (Exception e) {
             session.fail(e.getMessage() != null ? e.getMessage() : "问答失败");
         }
     }
 
-    private void streamGenerate(String system, String user, AskSseSession session) {
+    private void streamGenerate(String system, String user, AskSseSession session, String requestId, AskMode mode,
+            long embedMs, long retrieveMs, long totalStart) {
+        long llmStart = System.nanoTime();
         streamingChatLanguageModel.generate(
                 List.of(SystemMessage.from(system), UserMessage.from(user)),
                 new StreamingResponseHandler<AiMessage>() {
@@ -103,30 +170,28 @@ public class AskService {
 
                     @Override
                     public void onComplete(Response<AiMessage> response) {
+                        logTiming(new AskTiming(requestId, mode, embedMs, retrieveMs, AskTiming.millisSince(llmStart),
+                                AskTiming.millisSince(totalStart)));
                         session.complete();
                     }
 
                     @Override
                     public void onError(Throwable error) {
+                        logTiming(new AskTiming(requestId, mode, embedMs, retrieveMs, AskTiming.millisSince(llmStart),
+                                AskTiming.millisSince(totalStart)));
                         session.fail(error.getMessage() != null ? error.getMessage() : "生成失败");
                     }
                 });
     }
 
-    private PreparedAsk prepare(String question) {
-        float[] vector = embeddingService.embed(question);
-        String vectorStr = toVectorString(vector);
-        List<DocumentChunk> chunks = documentChunkRepository.findSimilarByEmbedding(vectorStr, 5);
-        List<Citation> citations = chunks.stream()
-                .map(chunk -> new Citation(chunk.getId(), chunk.getContent()))
-                .collect(Collectors.toList());
-        String userPrompt = chunks.isEmpty() ? ""
-                : qaPromptService.renderUser(question, chunks, QaPromptService.LEVEL_UNGATED,
-                        qaPromptService.ungatedGuidance());
-        return new PreparedAsk(chunks, citations, userPrompt);
+    private void logTiming(AskTiming timing) {
+        log.info("ask.timing requestId={} mode={} embedMs={} retrieveMs={} llmMs={} totalMs={}",
+                timing.requestId(), timing.mode(), timing.embedMs(), timing.retrieveMs(), timing.llmMs(),
+                timing.totalMs());
     }
 
-    private record PreparedAsk(List<DocumentChunk> chunks, List<Citation> citations, String userPrompt) {
+    private String newRequestId() {
+        return UUID.randomUUID().toString();
     }
 
     private String toVectorString(float[] vector) {

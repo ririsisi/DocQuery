@@ -12,4 +12,5 @@ import com.docquery.document.model.Document;
  */
 public interface DocumentRepository extends JpaRepository<Document, Long> {
 
+    java.util.Optional<Document> findFirstByFileName(String fileName);
 }

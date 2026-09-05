@@ -44,13 +44,7 @@ public class Document {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    /**
-     * 创建上传文档对象
-     * @param fileName 文件名
-     * @param fileType 文件类型
-     * @param fileSize 文件大小
-     * @return Document
-     */
+    /** 先落库再解析，失败也能留下 PENDING 记录。 */
     public static Document pendingUpload(String fileName, String fileType, Long fileSize) {
         Document document = new Document();
         document.setFileName(fileName);

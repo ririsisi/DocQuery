@@ -30,7 +30,8 @@ mvn spring-boot:run
 | 决策 | 选择 | 原因 |
 |------|------|------|
 | AI 框架 | LangChain4j | provider 抽象干净，换模型只改配置 |
-| 检索 | 单路 PGvector（MVP） | 先验证语义检索价值，后续加 ES 关键词通道 |
+| 检索 | 单路 PGvector（MVP） | 先验证语义检索价值，后续加关键词通道 + RRF |
+| 评测 | 仿制度黄金集 v1.3（回归 40 + 难例 8） | 回归与难例分开报；负例不计入 Hit@5 |
 | 分块 | 固定 512 token + 64 overlap | 先跑通链路，后续演进结构感知切片 |
 | 数据库迁移 | Flyway | 从第一天管住 schema 版本 |
 | 存储 | 本地文件（接口抽象） | 零依赖启动，后续可换 MinIO/S3 |
@@ -43,6 +44,7 @@ mvn spring-boot:run
 | 1 | `docker-credential-desktop` not in PATH | Docker credsStore 配置了 desktop，bin 未进 PATH | 补 `C:\Program Files\Docker\Docker\resources\bin` 到 PATH |
 | 2 | Docker Hub pull EOF | registry 网络不稳定 | Docker Engine 加 `registry-mirrors` |
 | 3 | 5432 bind forbidden，netstat 无占用 | Windows 保留端口段 5430–5529 | 宿主机改 **15432:5432**，JDBC 同步 |
+| 4 | 8081 already in use，netstat 无进程 | 8081 落在保留段 **7991–8090** | 应用改 **18081** |
 
 详细话术见 `interview-prep/notes/docquery-decisions.md`（T-01 ~ T-05）。
 
@@ -53,6 +55,8 @@ mvn spring-boot:run
 | POST | `/api/document/upload` | 上传文档（PDF/DOCX） |
 | POST | `/api/document/ask` | 同步问答（`mode=KB` 默认检索；`mode=CHAT` 不检索） |
 | POST | `/api/document/ask/stream` | 流式问答（同上 `mode`；SSE：token / citations / done） |
+| POST | `/api/eval/seed-corpus` | 入库仿制度语料（已有同名则跳过） |
+| POST | `/api/eval/goldenset` | 黄金集只评检索 Hit@5，不调生成；数字未测不进简历 |
 
 ## 项目结构
 

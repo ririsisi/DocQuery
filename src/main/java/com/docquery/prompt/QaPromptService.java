@@ -12,16 +12,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import com.docquery.document.model.DocumentChunk;
+import com.docquery.document.model.EvidenceLevel;
+import com.docquery.document.model.EvidenceWindow;
 
 /**
- * 从 classpath 读取版本化 Prompt，业务代码不写死系统提示词。
- * 终面模板一次写齐；未接线的文件启动时仍校验存在，避免目录残缺。
+ * Prompt 当配置读，改口吻升版本文件而不是改 Java。
+ * 未接线的模板启动时也校验存在，避免目录残缺被说成「已经上了」。
  */
 @Service
 public class QaPromptService {
-
-    public static final String LEVEL_UNGATED = "未分级";
 
     private static final List<String> REQUIRED_FILES = List.of(
             "qa-system.md",
@@ -43,7 +42,10 @@ public class QaPromptService {
     private final String userTemplate;
     private final String contextTemplate;
     private final String refuseNone;
-    private final String guidanceUngated;
+    private final String guidanceNone;
+    private final String guidanceWeak;
+    private final String guidancePartial;
+    private final String guidanceSufficient;
 
     public QaPromptService(@Value("${docquery.prompt.version:v1}") String version) {
         String base = "prompts/" + version + "/";
@@ -55,7 +57,10 @@ public class QaPromptService {
         this.userTemplate = read(base + "qa-user.md");
         this.contextTemplate = read(base + "qa-context.md");
         this.refuseNone = read(base + "qa-refuse-none.md").trim();
-        this.guidanceUngated = read(base + "qa-guidance-ungated.md").trim();
+        this.guidanceNone = read(base + "qa-guidance-none.md").trim();
+        this.guidanceWeak = read(base + "qa-guidance-weak.md").trim();
+        this.guidancePartial = read(base + "qa-guidance-partial.md").trim();
+        this.guidanceSufficient = read(base + "qa-guidance-sufficient.md").trim();
     }
 
     public String system() {
@@ -70,13 +75,25 @@ public class QaPromptService {
         return refuseNone;
     }
 
-    public String ungatedGuidance() {
-        return guidanceUngated;
+    public String guidance(EvidenceLevel level) {
+        if (level == null) {
+            return guidanceWeak;
+        }
+        return switch (level) {
+            case NONE -> guidanceNone;
+            case WEAK -> guidanceWeak;
+            case PARTIAL -> guidancePartial;
+            case SUFFICIENT -> guidanceSufficient;
+        };
     }
 
-    public String renderUser(String question, List<DocumentChunk> chunks, String evidenceLevel,
+    public String levelLabel(EvidenceLevel level) {
+        return level == null ? "WEAK" : level.name();
+    }
+
+    public String renderUser(String question, List<EvidenceWindow> windows, String evidenceLevel,
             String evidenceGuidance) {
-        String evidence = formatEvidence(chunks);
+        String evidence = formatEvidence(windows);
         String context = fill(contextTemplate, Map.of("evidence", evidence));
         return fill(userTemplate, Map.of(
                 "question", nullToEmpty(question),
@@ -85,17 +102,20 @@ public class QaPromptService {
                 "context", context));
     }
 
-    public String formatEvidence(List<DocumentChunk> chunks) {
-        if (chunks == null || chunks.isEmpty()) {
+    public String formatEvidence(List<EvidenceWindow> windows) {
+        if (windows == null || windows.isEmpty()) {
             return "（无）";
         }
-        return chunks.stream().map(chunk -> {
+        return windows.stream().map(window -> {
             StringBuilder line = new StringBuilder();
-            line.append("[E").append(chunk.getId()).append("]");
-            line.append(" documentId=").append(chunk.getDocumentId());
-            line.append(" chunkIndex=").append(chunk.getChunkIndex());
+            line.append("[E").append(window.primaryChunkId()).append("]");
+            line.append(" documentId=").append(window.documentId());
+            line.append(" chunkIndex=").append(window.startChunkIndex());
+            if (window.endChunkIndex() != window.startChunkIndex()) {
+                line.append('-').append(window.endChunkIndex());
+            }
             line.append('\n');
-            line.append(nullToEmpty(chunk.getContent()));
+            line.append(nullToEmpty(window.content()));
             return line.toString();
         }).collect(Collectors.joining("\n\n"));
     }

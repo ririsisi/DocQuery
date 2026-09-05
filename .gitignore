@@ -18,6 +18,7 @@ Thumbs.db
 # Uploads
 uploads/
 data/
+eval-runs/
 
 # Environment
 .env
