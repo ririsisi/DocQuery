@@ -6,6 +6,7 @@ import java.io.InputStream;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.stereotype.Service;
+/** 只抽文本，不做 OCR；扫描件会空。 */
 @Service
 public class PdfParser implements DocumentParser{
 

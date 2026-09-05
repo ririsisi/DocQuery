@@ -1,8 +1,8 @@
 package com.docquery.document.model;
 
 /**
- * 问答分流：CHAT 不检索；KB 走知识库。默认 KB，避免问候误进闸门。
- * 这是页面选择，不是 ReAct 模型自己决定调工具。
+ * 问答分流：CHAT 不检索；KB 走知识库。默认 KB，避免问候空检索被当成故障。
+ * 模式由页面传入，不是模型自己决定去不去检索。
  */
 public enum AskMode {
     CHAT,

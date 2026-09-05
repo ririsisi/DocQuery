@@ -8,6 +8,7 @@ import java.nio.file.Paths;
 
 import org.springframework.stereotype.Service;
 
+/** POC 用本地盘，避免先上对象存储。 */
 @Service
 public class LocalFileStorage implements FileStorage {
 

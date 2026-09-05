@@ -6,6 +6,7 @@ import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.model.output.Response;
 
+/** 换 Embedding 模型通常要改维度并重建向量列，禁止和旧向量混用。 */
 @Service
 public class EmbeddingService {
 

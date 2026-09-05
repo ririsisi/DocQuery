@@ -61,12 +61,6 @@ public class DocumentController {
         this.sseTimeoutMs = sseTimeoutMs;
     }
 
-    /**
-     * 上传文档
-     * 
-     * @param file 文件
-     * @return 文档对象
-     */
     @PostMapping(value = "/upload")
     @Transactional
     public ResponseEntity<ApiResponse<Document>> upload(@RequestParam("file") MultipartFile file) {
@@ -78,17 +72,14 @@ public class DocumentController {
                     file.getContentType(),
                     file.getSize());
 
-            // 把文件上传到本地
             fileStorage.upload(file.getOriginalFilename(), file.getInputStream());
 
-            // 获取文档解析器
             DocumentParser documentParser = parserFactory.getParser(file.getOriginalFilename(), file.getContentType());
 
             try (InputStream in = fileStorage.load(file.getOriginalFilename())) {
                 String contentText = documentParser.parse(in);
                 document.setContentText(contentText);
                 document.setStatus(DocumentStatus.COMPLETED);
-                // 保存文档对象
                 Document savedDocument = documentRepository.save(document);
                 List<String> chunks = chunkService.chunk(contentText);
                 int index = 0;
@@ -99,6 +90,7 @@ public class DocumentController {
                     documentChunk.setContent(chunk);
                     documentChunk.setCreatedAt(LocalDateTime.now());
                     Long chunkId = documentChunkRepository.save(documentChunk).getId();
+                    // pgvector 列不能走普通字段赋值，必须 CAST 成 vector
                     float[] embedding = embeddingService.embed(chunk);
                     documentChunkRepository.updateEmbeddings(chunkId, toVectorString(embedding));
                 }
@@ -112,12 +104,6 @@ public class DocumentController {
         }
     }
 
-    /**
-     * 问答
-     * 
-     * @param question 问题
-     * @return 问答结果
-     */
     @PostMapping(value = "/ask")
     public ResponseEntity<ApiResponse<AskResult>> ask(
             @RequestParam("question") String question,
@@ -144,6 +130,7 @@ public class DocumentController {
             HttpServletResponse response) {
         AskMode askMode = AskMode.fromParam(mode);
         response.setHeader("Cache-Control", "no-cache");
+        // 关掉反向代理缓冲，否则 SSE 会攒一批才推到浏览器
         response.setHeader("X-Accel-Buffering", "no");
         SseEmitter emitter = new SseEmitter(sseTimeoutMs);
         askService.askStream(question, askMode, emitter);

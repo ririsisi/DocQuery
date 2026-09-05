@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+/** 固定窗口先跑通；重叠 64 是为了少在句子中间切断。结构感知切片以后再换。 */
 @Service
 public class ChunkService {
 

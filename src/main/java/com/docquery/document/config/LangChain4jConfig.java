@@ -9,6 +9,7 @@ import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.dashscope.QwenChatModel;
 import dev.langchain4j.model.dashscope.QwenStreamingChatModel;
 
+/** 同步和流式两套模型：SSE 必须走 Streaming，普通 /ask 走同步。 */
 @Configuration
 public class LangChain4jConfig {
 

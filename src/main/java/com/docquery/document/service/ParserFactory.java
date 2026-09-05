@@ -4,6 +4,7 @@ import java.util.Map;
 
 import org.springframework.stereotype.Service;
 
+/** 按 MIME / 后缀找 `{suffix}Parser` Bean，加格式只加实现类。 */
 @Service
 public class ParserFactory {
     
